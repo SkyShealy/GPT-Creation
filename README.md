@@ -53,13 +53,13 @@ Held out a WikiText validation set and periodically evaluated the model on it du
 Re-ran with the fixes: more training data, a step count sized to a reasonable number of epochs over that data, and a larger model to actually make use of the extra data. Train and validation loss tracked closely throughout the run (no widening gap), showing generalization rather than memorization.
 
 **Overnight run at increased scale.**
-Final run: 8-layer / 512-dim (59.3M param) model on the full WikiText-103 train split, with checkpointing to Drive every 500 steps. Google Colab's GPU usage limit ended the session at step 28,200 out of a planned 30,000. I recovered it from the last Drive checkpoint (saved at step 28,000, train loss 3.39 / val loss 3.38), since the learning rate schedule was already within ~7% of fully annealed and the small remainder of steps wouldn't meaningfully change the result.
+Final run: 8 layers / 512 dim (59.3M param) model on the full WikiText-103 train split, with checkpointing to Drive every 500 steps. Google Colab's GPU usage limit ended the session at step 28,200 out of a planned 30,000. I recovered it from the last Drive checkpoint (saved at step 28,000, train loss 3.39 / val loss 3.38). Since the validation loss had already leveled out quite a bit and training was ~93.3% complete, I decided to move forward with the model at 28,000 steps rather than restore the checkpoint and continue the last ~7% of training. In a professional environment, I would complete the training, but as this is a personal project, I prioritized saving some time over a small improvement in the validation loss.
 
 ## Loss curve
 
 ![Loss curve](loss_curve.png)
 
-*Train and validation loss tracked together throughout training, with no widening gap — the key evidence that the model is generalizing rather than memorizing.*
+*Train and validation loss tracked together throughout training, with no widening gap. This supports that the model is generalizing rather than memorizing.*
 
 ## Sample generations
 
