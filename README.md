@@ -62,7 +62,7 @@ Final run: 8 layers / 512 dim (59.3M param) model on the full WikiText-103 train
 *Train and validation loss tracked together throughout training, with no widening gap. This supports that the model is generalizing rather than memorizing.*
 
 ## Sample generations 
-*Generated with temperature = 0.8 and max_new_tokens = 50*
+*Generated with `temperature` = 0.8 and `max_new_tokens` = 50*
 
 Prompt: `"The most important scientific discovery is"`
 > The most important scientific discovery is the observation of the various organisms with different bioregia, the bioregia of species in the evolution of organisms, and a few species of organisms, from organisms that are in the same category.
@@ -74,7 +74,7 @@ Prompt: `"In the beginning the universe"`
 > <|endoftext|> = = = Critical reception = = =
 > <|endoftext|> " The
 
-This example is imperfect but shows something different, and arguably more encouraging, than the first: coherence within and across sentences. The quotation marks open and close correctly, the comparative clause ("not as a good episode") is grammatically sound, and the model sustains a consistent register throughout. This reads like a snippet of TV criticism, complete with a review-style grade and a `Critical reception` section header formatted exactly the way WikiText articles mark section breaks. That last part is interesting: the model has learned that `<|endoftext|>` is often followed by a new Wikipedia-style header, and it reproduces that document structure correctly.
+This example is imperfect but shows something different, and arguably more encouraging, than the first: coherence within and across sentences. The quotation marks open and close correctly, the comparative clause ("not as a good episode") is grammatically sound, and the model maintains some consistency through the output. This reads like a snippet of TV criticism, complete with a review-style grade and a `Critical reception` section header formatted exactly the way WikiText articles mark section breaks. That last part is interesting: the model has learned that `<|endoftext|>` is often followed by a new Wikipedia-style header, and it reproduces that document structure correctly.
 
 What it doesn't do is stay on topic. "The universe" is abandoned almost immediately to talk about an unrelated TV review. Together with the "bioregia" example, this gives a fairly good picture of the model's current ability: sentence-level and immediate structure is learned pretty well, while an understanding of the output as a whole is not. This is expected of a ~59M-parameter model trained on a fairly small token budget with a loss between 3 and 4.
 
