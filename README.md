@@ -81,11 +81,8 @@ What it doesn't do is stay on topic. "The universe" is abandoned almost immediat
 ## What I'd do differently with more computing power
 
 - Scale to a GPT-2-small-equivalent config (768-dim, 12 layers, 12 heads) — commented out in the script but not run due to compute constraints
-
 - Train on meaningfully more tokens relative to parameter count. According to Deepmind's Chinchilla findings on LLM scaling, tokens should scale with parameter count at roughly a 20:1 ratio for a model to make full use of its size. At ~59M parameters, that would suggest roughly 1.2B training tokens would be more appropriate. Since this run used only ~246M tokens, the model could likely benefit from a large increase in training data before ever scaling the amount of parameters.
-
 - Consider other performance metrics outside of loss.
-
 - Scale up the amount of warmup steps from 1% to roughly 3% of the max steps to be safer about potential early instability.
 
 ## Repo contents
