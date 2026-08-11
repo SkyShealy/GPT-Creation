@@ -33,7 +33,7 @@ Base architecture and training script adapted from [raiyanyahya/how-to-train-you
 | `learning_rate` | 3e-4 |
 | **Total parameters** | **59,294,720** |
 | **Final train loss** | **3.3858** (step 28,000) |
-| **Final val loss** | **3.3797** (step 28,000) |
+| **Final validation loss** | **3.3797** (step 28,000) |
 
 **Dataset:** [WikiText-103](https://huggingface.co/datasets/Salesforce/wikitext) (raw), full train split (~1.16M documents after filtering blank lines), held-out validation split (~2.5K documents) used for periodic evaluation.
 
@@ -43,7 +43,7 @@ Base architecture and training script adapted from [raiyanyahya/how-to-train-you
 
 A raw loss number on its own doesn't say much and an interesting part of this project was diagnosing why exactly a low loss didn't mean a good model.
 
-**First attempt; very low loss, but unusable output.**
+**First attempt: very low loss, but unusable output.**
 An early run trained a 17M-parameter model on only 5,000 lines of WikiText for 50,000 steps. Training loss dropped to under 1.0, but generated text was fluent locally, but incoherent globally. It kept using the same handful of proper nouns regardless of prompt. With no validation loss being tracked, nothing explicitly said there was a problem. At first, I thought it may just be a limit of such little training data. Upon further inspection, I realized that the model had seen its ~285K token dataset more than 150 times. This signaled that the low loss was just a result of memorization, not learning. The model was incredibly overfitted.
 
 **Adding a validation split.**
@@ -61,42 +61,48 @@ Final run: 8 layers / 512 dim (59.3M param) model on the full WikiText-103 train
 
 *Train and validation loss tracked together throughout training, with no widening gap. This supports that the model is generalizing rather than memorizing.*
 
-## Sample generations
+## Sample generations 
+*Generated with temperature = 0.8 and max_new_tokens = 50*
 
 Prompt: `"The most important scientific discovery is"`
 > The most important scientific discovery is the observation of the various organisms with different bioregia, the bioregia of species in the evolution of organisms, and a few species of organisms, from organisms that are in the same category.
 
-Notably, **"bioregia" is not a real word and does not appear anywhere in the training data** (confirmed by direct search). It's a clean illustration of subword tokenization: GPT-2's BPE tokenizer encodes text as vocabulary pieces rather than whole words, and `bio` is a common standalone token in scientific text. At this model's current loss/perplexity, it's learned the statistical pattern that `bio` is often followed by certain kinds of technical suffixes — but hasn't fully learned the precise correct continuations, so at sampling time it occasionally combines real subword tokens into a plausible-looking non-word. It's a useful, concrete example of the gap between "the model has learned surface patterns" and "the model knows actual vocabulary."
+Notably, **"bioregia" is not a real word and does not appear anywhere in the training data** (confirmed with a direct search). It's a product of subword tokenization: GPT-2's BPE tokenizer encodes text as vocabulary pieces rather than whole words, and `bio` is a common standalone token in scientific text. At this model's current loss and complexity, it's learned the statistical pattern that `bio` is often followed by certain kinds of technical suffixes, but hasn't fully learned the precise correct continuations. Because of this, it occasionally combines real subword tokens into a plausible-looking non-word. This demonstrates the fact that there is a gap between "the model has learned surface patterns" and "the model knows actual vocabulary."
 
 Prompt: `"In the beginning the universe"`
 > In the beginning the universe . " She gave the episode a " C " grade of 4 , stating , " It 's so much a bad episode – but not as a good episode . "
 > <|endoftext|> = = = Critical reception = = =
 > <|endoftext|> " The
 
-This example is imperfect but shows something different, and arguably more encouraging, than the first: coherence *within and across* sentences, not just within a word. The quotation marks open and close correctly, the comparative clause ("not as a good episode") is grammatically sound, and the model sustains a consistent register throughout — this reads like a snippet of TV/media criticism, complete with a review-style grade and a `Critical reception` section header formatted exactly the way WikiText articles mark section breaks. That last part is notable: the model has learned that `<|endoftext|>` is often followed by a new Wikipedia-style header, and it reproduces that document structure correctly, not just plausible-looking words.
+This example is imperfect but shows something different, and arguably more encouraging, than the first: coherence within and across sentences. The quotation marks open and close correctly, the comparative clause ("not as a good episode") is grammatically sound, and the model sustains a consistent register throughout. This reads like a snippet of TV criticism, complete with a review-style grade and a `Critical reception` section header formatted exactly the way WikiText articles mark section breaks. That last part is interesting: the model has learned that `<|endoftext|>` is often followed by a new Wikipedia-style header, and it reproduces that document structure correctly.
 
-What it doesn't do is stay on topic — "the universe" is abandoned almost immediately in favor of an unrelated TV review, so the passage has local coherence (each clause is well-formed, the register is consistent) without global coherence (there's no throughline connecting it to the prompt, or to itself as a whole). Together with the "bioregia" example, this gives a fairly specific picture of the model's current ability: sentence-level and short-range structure is genuinely learned, while long-range topical grounding is not — which is consistent with a mid-single-digit loss on a ~59M-parameter model trained on a comparatively small token budget.
+What it doesn't do is stay on topic. "The universe" is abandoned almost immediately to talk about an unrelated TV review. Together with the "bioregia" example, this gives a fairly good picture of the model's current ability: sentence-level and immediate structure is learned pretty well, while an understanding of the output as a whole is not. This is expected of a ~59M-parameter model trained on a fairly small token budget with a loss between 3 and 4.
 
-## What I'd do differently with more compute
+## What I'd do differently with more computing power
 
-- Scale to a GPT-2-small-equivalent config (768-dim, 12 layers, 12 heads) — commented out in the script but not run due to time/compute constraints
-- Train on meaningfully more tokens relative to parameter count (roughly Chinchilla-optimal scaling suggests this run is still data-constrained relative to model size)
-- Save full optimizer/scheduler state in checkpoints (not just model weights) to allow exact resumption after an interruption, rather than restarting the schedule from the nearest completed step
-- Add downstream evaluation (e.g. simple perplexity benchmarks) beyond validation loss alone
+- Scale to a GPT-2-small-equivalent config (768-dim, 12 layers, 12 heads) — commented out in the script but not run due to compute constraints
+
+- Train on meaningfully more tokens relative to parameter count. According to Deepmind's Chinchilla findings on LLM scaling, tokens should scale with parameter count at roughly a 20:1 ratio for a model to make full use of its size. At ~59M parameters, that would suggest roughly 1.2B training tokens would be more appropriate. Since this run used only ~246M tokens, the model could likely benefit from a large increase in training data before ever scaling the amount of parameters.
+
+- Consider other performance metrics outside of loss.
+
+- Scale up the amount of warmup steps from 1% to roughly 3% of the max steps to be safer about potential early instability.
 
 ## Repo contents
 
-- `full_gpt.py` — complete training script (model, tokenizer wrapper, training loop, evaluation, generation)
-- `loss_curve.png` — train/val loss curve from the final training run
-- Model checkpoints available on request (not committed to the repo due to file size)
+- `TrainGPTNotebook.ipynb` -- full training script: model architecture, tokenizer, dataset loading, training loop, validation, and Drive checkpointing
+- `RunGPTNotebook.ipynb` -- smaller notebook for loading a saved checkpoint and generating text, without retraining or reloading the full dataset. Also includes some investigation I did on outputs.
+- `loss_curve.png` -- train/val loss curve from the final training run
+- Final Model checkpoint available on request (not committed to the repo due to file size)
+
 
 ## Acknowledgments
 
 The core architecture and training script are adapted from [raiyanyahya/how-to-train-your-gpt](https://github.com/raiyanyahya/how-to-train-your-gpt), which was the primary resource I learned from for this project. Credit to that repo for the model implementation (RoPE, RMSNorm, SwiGLU, the training/generation loop) and for teaching the underlying concepts.
 
 What I added on top of that base:
-- Diagnosed and fixed an overfitting issue in the original small-scale configuration (too little training data relative to step count)
+- Diagnosed and fixed an overfitting issue in the original small model (too little training data relative to step count)
 - Added a validation split and periodic evaluation, which the base script didn't include, to make train/val divergence visible
 - Scaled the data and model configuration for a larger training run
-- Added Google Drive checkpointing to survive Colab session interruptions, and resumed training from a checkpoint after a mid-run disconnect
+- Added Google Drive checkpointing as backup for Colab session interruptions and restored the model from the latest checkpoint
 - Investigated and documented specific model behaviors (subword tokenization artifacts, sentence-level vs. topical coherence) shown in the Sample Generations section above
