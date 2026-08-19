@@ -78,7 +78,7 @@ This example is imperfect but shows something different, and arguably more encou
 
 What it doesn't do is stay on topic. "The universe" is abandoned almost immediately to talk about an unrelated TV review. Together with the "bioregia" example, this gives a fairly good picture of the model's current ability: sentence-level and immediate structure is learned pretty well, while an understanding of the output as a whole is not. This is expected of a ~59M-parameter model trained on a fairly small token budget with a loss between 3 and 4.
 
-## What I'd do differently with more time and/or computing power
+## What I'd do differently with more time / computing power
 
 - Scale to a GPT-2-small-equivalent config (768-dim, 12 layers, 12 heads) — commented out in the script but not run due to compute constraints
 - Train on meaningfully more tokens relative to parameter count. According to Deepmind's Chinchilla findings on LLM scaling, tokens should scale with parameter count at roughly a 20:1 ratio for a model to make full use of its size. At ~59M parameters, that would suggest roughly 1.2B training tokens would be more appropriate. Since this run used only ~246M tokens, the model could likely benefit from a large increase in training data before ever scaling the amount of parameters.
